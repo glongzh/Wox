@@ -10,29 +10,21 @@ using Newtonsoft.Json;
 
 namespace Wox.Plugin.PluginManagement
 {
-    public class WoxPlugin
-    {
-        public int apiVersion { get; set; }
-        public List<WoxPluginResult> result { get; set; }
-    }
-
     public class WoxPluginResult
     {
-        public string downloadUrl;
-        public string author;
+        public string plugin_file;
         public string description;
-        public string id;
-        public string language;
-        public int like;
+        public int liked_count;
         public string name;
+        public string version;
     }
-
 
     public class Main : IPlugin
     {
+        private static string APIBASE = "https://api.getwox.com";
         private static string PluginPath = AppDomain.CurrentDomain.BaseDirectory + "Plugins";
         private static string PluginConfigName = "plugin.json";
-        private static string pluginSearchUrl = "http://www.getwox.com/api/plugin/search/";
+        private static string pluginSearchUrl = APIBASE +"/plugin/search/";
         private PluginInitContext context;
 
         public List<Result> Query(Query query)
@@ -40,36 +32,27 @@ namespace Wox.Plugin.PluginManagement
             List<Result> results = new List<Result>();
             if (query.ActionParameters.Count == 0)
             {
-                results.Add(new Result()
+                results.Add(new Result("wpm install <pluginName>", "Images\\plugin.png", "search and install wox plugins")
                 {
-                    Title = "wpm install <pluginName>",
-                    SubTitle = "search and install wox plugins",
-                    IcoPath = "Images\\plugin.png",
                     Action = e =>
                     {
-                        context.ChangeQuery("wpm install ");
+                        context.API.ChangeQuery("wpm install ");
                         return false;
                     }
                 });
-                results.Add(new Result()
+                results.Add(new Result("wpm uninstall <pluginName>", "Images\\plugin.png", "uninstall plugin")
                 {
-                    Title = "wpm uninstall <pluginName>",
-                    SubTitle = "uninstall plugin",
-                    IcoPath = "Images\\plugin.png",
                     Action = e =>
                     {
-                        context.ChangeQuery("wpm uninstall ");
+                        context.API.ChangeQuery("wpm uninstall ");
                         return false;
                     }
                 });
-                results.Add(new Result()
+                results.Add(new Result("wpm list", "Images\\plugin.png", "list plugins installed")
                 {
-                    Title = "wpm list",
-                    SubTitle = "list plugins installed",
-                    IcoPath = "Images\\plugin.png",
                     Action = e =>
                     {
-                        context.ChangeQuery("wpm list");
+                        context.API.ChangeQuery("wpm list");
                         return false;
                     }
                 });
@@ -104,42 +87,33 @@ namespace Wox.Plugin.PluginManagement
                 {
                     if ("install".Contains(query.ActionParameters[0].ToLower()))
                     {
-                        results.Add(new Result()
+                        results.Add(new Result("wpm install <pluginName>", "Images\\plugin.png", "search and install wox plugins")
                         {
-                            Title = "wpm install <pluginName>",
-                            SubTitle = "search and install wox plugins",
-                            IcoPath = "Images\\plugin.png",
                             Action = e =>
                             {
-                                context.ChangeQuery("wpm install ");
+                                context.API.ChangeQuery("wpm install ");
                                 return false;
                             }
                         });
                     }
                     if ("uninstall".Contains(query.ActionParameters[0].ToLower()))
                     {
-                        results.Add(new Result()
+                        results.Add(new Result("wpm uninstall <pluginName>", "Images\\plugin.png", "uninstall plugin")
                         {
-                            Title = "wpm uninstall <pluginName>",
-                            SubTitle = "uninstall plugin",
-                            IcoPath = "Images\\plugin.png",
                             Action = e =>
                             {
-                                context.ChangeQuery("wpm uninstall ");
+                                context.API.ChangeQuery("wpm uninstall ");
                                 return false;
                             }
                         });
                     }
                     if ("list".Contains(query.ActionParameters[0].ToLower()))
                     {
-                        results.Add(new Result()
+                        results.Add(new Result("wpm list", "Images\\plugin.png", "list plugins installed")
                         {
-                            Title = "wpm list",
-                            SubTitle = "list plugins installed",
-                            IcoPath = "Images\\plugin.png",
                             Action = e =>
                             {
-                                context.ChangeQuery("wpm list");
+                                context.API.ChangeQuery("wpm list");
                                 return false;
                             }
                         });
@@ -153,14 +127,24 @@ namespace Wox.Plugin.PluginManagement
         private List<Result> InstallPlugin(Query query)
         {
             List<Result> results = new List<Result>();
-            HttpWebResponse response = HttpRequest.CreateGetHttpResponse(pluginSearchUrl + query.ActionParameters[1], null, null, null);
+            HttpWebResponse response = HttpRequest.CreateGetHttpResponse(pluginSearchUrl + query.ActionParameters[1], context.Proxy);
             Stream s = response.GetResponseStream();
             if (s != null)
             {
                 StreamReader reader = new StreamReader(s, Encoding.UTF8);
                 string json = reader.ReadToEnd();
-                WoxPlugin o = JsonConvert.DeserializeObject<WoxPlugin>(json);
-                foreach (WoxPluginResult r in o.result)
+                List<WoxPluginResult> searchedPlugins = null;
+                try
+                {
+                    searchedPlugins = JsonConvert.DeserializeObject<List<WoxPluginResult>>(json);
+                }
+                catch
+                {
+                    context.API.ShowMsg("Coundn't parse api search results", "Please update your Wox!",string.Empty);
+                    return results;
+                }
+
+                foreach (WoxPluginResult r in searchedPlugins)
                 {
                     WoxPluginResult r1 = r;
                     results.Add(new Result()
@@ -170,31 +154,38 @@ namespace Wox.Plugin.PluginManagement
                         IcoPath = "Images\\plugin.png",
                         Action = e =>
                         {
-                            string folder = Path.Combine(Path.GetTempPath(), "WoxPluginDownload");
-                            if (!Directory.Exists(folder)) Directory.CreateDirectory(folder);
-                            string filePath = Path.Combine(folder, Guid.NewGuid().ToString() + ".wox");
+                            DialogResult result = MessageBox.Show("Are your sure to install " + r.name + " plugin",
+                                "Install plugin", MessageBoxButtons.YesNo);
 
-                            context.StartLoadingBar();
-                            ThreadPool.QueueUserWorkItem(delegate
+                            if (result == DialogResult.Yes)
                             {
-                                using (WebClient Client = new WebClient())
+                                string folder = Path.Combine(Path.GetTempPath(), "WoxPluginDownload");
+                                if (!Directory.Exists(folder)) Directory.CreateDirectory(folder);
+                                string filePath = Path.Combine(folder, Guid.NewGuid().ToString() + ".wox");
+
+                                context.API.StartLoadingBar();
+                                ThreadPool.QueueUserWorkItem(delegate
                                 {
-                                    try
+                                    using (WebClient Client = new WebClient())
                                     {
-                                        Client.DownloadFile(r1.downloadUrl, filePath);
-                                        context.InstallPlugin(filePath);
-                                        context.ReloadPlugins();
+                                        try
+                                        {
+                                            string pluginUrl = APIBASE + "/media/" + r1.plugin_file;
+                                            Client.DownloadFile(pluginUrl, filePath);
+                                            context.API.InstallPlugin(filePath);
+                                            context.API.ReloadPlugins();
+                                        }
+                                        catch (Exception exception)
+                                        {
+                                            MessageBox.Show("download plugin " + r.name + "failed. " + exception.Message);
+                                        }
+                                        finally
+                                        {
+                                            context.API.StopLoadingBar();
+                                        }
                                     }
-                                    catch (Exception exception)
-                                    {
-                                        MessageBox.Show("download plugin " + r.name + "failed. " + exception.Message);
-                                    }
-                                    finally
-                                    {
-                                        context.StopLoadingBar();
-                                    }
-                                }
-                            });
+                                });
+                            }
                             return false;
                         }
                     });
@@ -220,7 +211,7 @@ namespace Wox.Plugin.PluginManagement
                 {
                     Title = plugin.Name,
                     SubTitle = plugin.Description,
-                    IcoPath = "Images\\plugin.png",
+                    IcoPath = plugin.FullIcoPath,
                     Action = e =>
                     {
                         UnInstalledPlugins(plugin);
@@ -236,7 +227,7 @@ namespace Wox.Plugin.PluginManagement
             string content = string.Format("Do you want to uninstall following plugin?\r\n\r\nName: {0}\r\nVersion: {1}\r\nAuthor: {2}", plugin.Name, plugin.Version, plugin.Author);
             if (MessageBox.Show(content, "Wox", MessageBoxButtons.YesNo) == DialogResult.Yes)
             {
-                File.Create(Path.Combine(plugin.PluginDirecotry, "NeedDelete.txt")).Close();
+                File.Create(Path.Combine(plugin.PluginDirectory, "NeedDelete.txt")).Close();
                 MessageBox.Show("This plugin has been removed, restart Wox to take effect");
             }
         }
@@ -250,7 +241,7 @@ namespace Wox.Plugin.PluginManagement
                 {
                     Title = plugin.Name + " - " + plugin.ActionKeyword,
                     SubTitle = plugin.Description,
-                    IcoPath = "Images\\plugin.png"
+                    IcoPath = plugin.FullIcoPath
                 });
             }
             return results;
@@ -286,7 +277,7 @@ namespace Wox.Plugin.PluginManagement
             {
                 metadata = JsonConvert.DeserializeObject<PluginMetadata>(File.ReadAllText(configPath));
                 metadata.PluginType = PluginType.ThirdParty;
-                metadata.PluginDirecotry = pluginDirectory;
+                metadata.PluginDirectory = pluginDirectory;
             }
             catch (Exception)
             {

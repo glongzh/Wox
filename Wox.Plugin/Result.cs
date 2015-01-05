@@ -1,19 +1,37 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.IO;
 
 namespace Wox.Plugin
 {
+
     public class Result
     {
+
         public string Title { get; set; }
         public string SubTitle { get; set; }
         public string IcoPath { get; set; }
 
+        public string FullIcoPath
+        {
+            get
+            {
+                if (string.IsNullOrEmpty(IcoPath)) return string.Empty;
+                if (IcoPath.StartsWith("data:"))
+                {
+                    return IcoPath;
+                }
+
+                return Path.Combine(PluginDirectory, IcoPath);
+            }
+        }
+
         /// <summary>
         /// return true to hide wox after select result
         /// </summary>
-        public Func<ActionContext,bool> Action { get; set; }
+        public Func<ActionContext, bool> Action { get; set; }
+
         public int Score { get; set; }
 
         /// <summary>
@@ -44,5 +62,19 @@ namespace Wox.Plugin
         {
             return Title + SubTitle;
         }
+
+        public Result()
+        {
+
+        }
+
+        public Result(string Title = null, string IcoPath = null, string SubTitle = null)
+        {
+            this.Title = Title;
+            this.IcoPath = IcoPath;
+            this.SubTitle = SubTitle;
+        }
+
+        public List<Result> ContextMenu { get; set; } 
     }
 }

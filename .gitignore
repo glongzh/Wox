@@ -1,8 +1,10 @@
 *.pyd
+*.pyc
 
 # Build Folders (you can keep bin if you'd like, to store dlls and pdbs)
 [Bb]in/
 [Oo]bj/
+Output/
 
 # mstest test results
 TestResults
@@ -83,7 +85,7 @@ publish
 *.Publish.xml
 
 # NuGet Packages Directory
-packages
+/packages
 
 # Windows Azure Build Output
 csx
@@ -113,3 +115,8 @@ UpgradeLog*.XML
 
 *.DotSettings
 /Python.Runtime.dll
+Wox/Images/websearch/Thumbs.db
+Wox/Images/Thumbs.db
+Wox/Wox.csproj
+
+*.sublime-*

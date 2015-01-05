@@ -4,28 +4,25 @@ using System.Linq;
 using System.Text;
 using Wox.Helper;
 using Wox.Plugin;
+using Wox.PluginLoader;
 
 namespace Wox.Commands
 {
     internal static class CommandFactory
     {
-        private static PluginCommand pluginCmd;
-        private static SystemCommand systemCmd;
+        private static PluginCommand pluginCmd = new PluginCommand();
+        private static SystemCommand systemCmd = new SystemCommand();
 
-        public static void DispatchCommand(Query query, bool updateView = true)
+        public static void DispatchCommand(Query query)
         {
-            //lazy init command instance.
-            if (pluginCmd == null)
+            if (Plugins.HitThirdpartyKeyword(query))
             {
-                pluginCmd = new PluginCommand();
+                pluginCmd.Dispatch(query);
             }
-            if (systemCmd == null)
+            else
             {
-                systemCmd = new SystemCommand();
+                systemCmd.Dispatch(query);                
             }
-
-            systemCmd.Dispatch(query,updateView);
-            pluginCmd.Dispatch(query,updateView);
         }
     }
 }

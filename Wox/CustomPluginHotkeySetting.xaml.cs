@@ -1,28 +1,17 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Shapes;
-using Wox.Infrastructure;
-using Wox.Infrastructure.UserSettings;
+using Wox.Infrastructure.Storage.UserSettings;
 
 namespace Wox
 {
     public partial class CustomPluginHotkeySetting : Window
     {
-        private SettingWidow settingWidow;
+        private SettingWindow settingWidow;
         private bool update;
         private CustomPluginHotkey updateCustomHotkey;
 
-
-        public CustomPluginHotkeySetting(SettingWidow settingWidow)
+        public CustomPluginHotkeySetting(SettingWindow settingWidow)
         {
             this.settingWidow = settingWidow;
             InitializeComponent();
@@ -43,9 +32,9 @@ namespace Wox
                     return;
                 }
 
-                if (CommonStorage.Instance.UserSetting.CustomPluginHotkeys == null)
+                if (UserSettingStorage.Instance.CustomPluginHotkeys == null)
                 {
-                    CommonStorage.Instance.UserSetting.CustomPluginHotkeys = new List<CustomPluginHotkey>();
+                    UserSettingStorage.Instance.CustomPluginHotkeys = new List<CustomPluginHotkey>();
                 }
 
                 var pluginHotkey = new CustomPluginHotkey()
@@ -53,7 +42,7 @@ namespace Wox
                     Hotkey = ctlHotkey.CurrentHotkey.ToString(),
                     ActionKeyword = tbAction.Text
                 };
-                CommonStorage.Instance.UserSetting.CustomPluginHotkeys.Add(pluginHotkey);
+                UserSettingStorage.Instance.CustomPluginHotkeys.Add(pluginHotkey);
                 settingWidow.MainWindow.SetHotkey(ctlHotkey.CurrentHotkey.ToString(), delegate
                 {
                     settingWidow.MainWindow.ChangeQuery(pluginHotkey.ActionKeyword);
@@ -81,14 +70,14 @@ namespace Wox
                 MessageBox.Show("Update successfully!");
             }
 
-            CommonStorage.Instance.Save();
+            UserSettingStorage.Instance.Save();
             settingWidow.ReloadCustomPluginHotkeyView();
             Close();
         }
 
         public void UpdateItem(CustomPluginHotkey item)
         {
-            updateCustomHotkey = CommonStorage.Instance.UserSetting.CustomPluginHotkeys.FirstOrDefault(o => o.ActionKeyword == item.ActionKeyword && o.Hotkey == item.Hotkey);
+            updateCustomHotkey = UserSettingStorage.Instance.CustomPluginHotkeys.FirstOrDefault(o => o.ActionKeyword == item.ActionKeyword && o.Hotkey == item.Hotkey);
             if (updateCustomHotkey == null)
             {
                 MessageBox.Show("Invalid plugin hotkey");

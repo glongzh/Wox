@@ -1,26 +1,31 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics;
+using System.IO;
+using System.Threading;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Forms;
 using System.Windows.Input;
 using System.Windows.Media;
 using Wox.Helper;
-using Wox.Infrastructure;
 using Wox.Plugin;
-using MessageBox = System.Windows.MessageBox;
 using UserControl = System.Windows.Controls.UserControl;
 
 namespace Wox
 {
     public partial class ResultPanel : UserControl
     {
-        public event Action<Result> OnMouseClickItem;
+        public event Action<Result> LeftMouseClickEvent;
+        public event Action<Result> RightMouseClickEvent;
 
-        protected virtual void OnOnMouseClickItem(Result result)
+        protected virtual void OnRightMouseClick(Result result)
         {
-            Action<Result> handler = OnMouseClickItem;
+            Action<Result> handler = RightMouseClickEvent;
+            if (handler != null) handler(result);
+        }
+
+        protected virtual void OnLeftMouseClick(Result result)
+        {
+            Action<Result> handler = LeftMouseClickEvent;
             if (handler != null) handler(result);
         }
 
@@ -28,6 +33,7 @@ namespace Wox
 
         public void AddResults(List<Result> results)
         {
+
             if (Dirty)
             {
                 Dirty = false;
@@ -38,7 +44,7 @@ namespace Wox
                 int position = GetInsertLocation(result.Score);
                 lbResults.Items.Insert(position, result);
             }
-            gridContainer.Margin = lbResults.Items.Count > 0 ? new Thickness { Top = 8 } : new Thickness { Top = 0 };
+            lbResults.Margin = lbResults.Items.Count > 0 ? new Thickness { Top = 8 } : new Thickness { Top = 0 };
             SelectFirst();
         }
 
@@ -69,29 +75,6 @@ namespace Wox
             }
 
             return location;
-        }
-
-        private FrameworkElement FindByName(string name, FrameworkElement root)
-        {
-            Stack<FrameworkElement> tree = new Stack<FrameworkElement>();
-            tree.Push(root);
-
-            while (tree.Count > 0)
-            {
-                FrameworkElement current = tree.Pop();
-                if (current.Name == name)
-                    return current;
-
-                int count = VisualTreeHelper.GetChildrenCount(current);
-                for (int i = 0; i < count; ++i)
-                {
-                    DependencyObject child = VisualTreeHelper.GetChild(current, i);
-                    if (child is FrameworkElement)
-                        tree.Push((FrameworkElement)child);
-                }
-            }
-
-            return null;
         }
 
         public void SelectNext()
@@ -127,7 +110,7 @@ namespace Wox
             }
         }
 
-        public Result AcceptSelect()
+        public Result GetActiveResult()
         {
             int index = lbResults.SelectedIndex;
             if (index < 0) return null;
@@ -143,12 +126,12 @@ namespace Wox
         public void Clear()
         {
             lbResults.Items.Clear();
-            gridContainer.Margin = new Thickness { Top = 0 };
+            lbResults.Margin = new Thickness { Top = 0 };
         }
 
         private void lbResults_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            if (e.AddedItems.Count > 0)
+            if (e.AddedItems.Count > 0 && e.AddedItems[0] != null)
             {
                 lbResults.ScrollIntoView(e.AddedItems[0]);
             }
@@ -157,9 +140,13 @@ namespace Wox
         private void LbResults_OnPreviewMouseDown(object sender, MouseButtonEventArgs e)
         {
             var item = ItemsControl.ContainerFromElement(lbResults, e.OriginalSource as DependencyObject) as ListBoxItem;
-            if (item != null)
+            if (item != null && e.ChangedButton == MouseButton.Left)
             {
-                OnOnMouseClickItem(item.DataContext as Result);
+                OnLeftMouseClick(item.DataContext as Result);
+            }
+            if (item != null && e.ChangedButton == MouseButton.Right)
+            {
+                OnRightMouseClick(item.DataContext as Result);
             }
         }
 

@@ -37,13 +37,23 @@ namespace Wox.Helper
                     return;
                 }
 
-                string pluginFolerPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Plugins");
+                string pluginFolerPath = Path.Combine(Path.GetDirectoryName(System.Windows.Forms.Application.ExecutablePath), "Plugins");
                 if (!Directory.Exists(pluginFolerPath))
                 {
                     Directory.CreateDirectory(pluginFolerPath);
                 }
 
-                string newPluginPath = Path.Combine(pluginFolerPath, Guid.NewGuid().ToString());
+                string newPluginName = plugin.Name
+                    .Replace("/", "_")
+                    .Replace("\\", "_")
+                    .Replace(":", "_")
+                    .Replace("<", "_")
+                    .Replace(">", "_")
+                    .Replace("?", "_")
+                    .Replace("*", "_")
+                    .Replace("|", "_")
+                    + "-" + Guid.NewGuid();
+                string newPluginPath = Path.Combine(pluginFolerPath,newPluginName);
                 string content = string.Format(
                         "Do you want to install following plugin?\r\n\r\nName: {0}\r\nVersion: {1}\r\nAuthor: {2}",
                         plugin.Name, plugin.Version, plugin.Author);
@@ -60,9 +70,10 @@ namespace Wox.Helper
                     MessageBoxButton.YesNo, MessageBoxImage.Question);
                 if (result == MessageBoxResult.Yes)
                 {
-                    if (existingPlugin != null && Directory.Exists(existingPlugin.Metadata.PluginDirecotry))
+                    if (existingPlugin != null && Directory.Exists(existingPlugin.Metadata.PluginDirectory))
                     {
-                        File.Create(Path.Combine(existingPlugin.Metadata.PluginDirecotry, "NeedDelete.txt")).Close();
+                        //when plugin is in use, we can't delete them. That's why we need to make plugin folder a random name
+                        File.Create(Path.Combine(existingPlugin.Metadata.PluginDirectory, "NeedDelete.txt")).Close();
                     }
 
                     UnZip(path, newPluginPath, true);
@@ -81,7 +92,7 @@ namespace Wox.Helper
                     {
                         ProcessStartInfo Info = new ProcessStartInfo();
                         Info.Arguments = "/C ping 127.0.0.1 -n 1 && \"" +
-                                         Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "wox.exe") + "\"";
+                                         System.Windows.Forms.Application.ExecutablePath + "\"";
                         Info.WindowStyle = ProcessWindowStyle.Hidden;
                         Info.CreateNoWindow = true;
                         Info.FileName = "cmd.exe";
@@ -106,7 +117,7 @@ namespace Wox.Helper
             {
                 metadata = JsonConvert.DeserializeObject<PluginMetadata>(File.ReadAllText(configPath));
                 metadata.PluginType = PluginType.ThirdParty;
-                metadata.PluginDirecotry = pluginDirectory;
+                metadata.PluginDirectory = pluginDirectory;
             }
             catch (Exception)
             {

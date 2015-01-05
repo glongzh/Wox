@@ -3,35 +3,38 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading;
+using Wox.Infrastructure.Storage.UserSettings;
 using Wox.Plugin;
+using Wox.Plugin.SystemPlugins;
 using Wox.PluginLoader;
 
 namespace Wox.Commands
 {
     public class SystemCommand : BaseCommand
     {
-        private List<PluginPair> systemPlugins;
+        private IEnumerable<PluginPair> allSytemPlugins = Plugins.AllPlugins.Where(o => o.Metadata.PluginType == PluginType.System);
 
-        public SystemCommand()
+        public override void Dispatch(Query query)
         {
-            systemPlugins = Plugins.AllPlugins.Where(o => o.Metadata.PluginType == PluginType.System).ToList();
-        }
+            var queryPlugins = allSytemPlugins;
+            if (UserSettingStorage.Instance.WebSearches.Exists(o => o.ActionWord == query.ActionName && o.Enabled))
+            {
+                //websearch mode
+                queryPlugins = new List<PluginPair>()
+                {
+                    allSytemPlugins.First(o => ((ISystemPlugin)o.Plugin).ID == "565B73353DBF4806919830B9202EE3BF")
+                };
+            }
 
-        public override void Dispatch(Query query,bool updateView = true)
-        {
-            foreach (PluginPair pair in systemPlugins)
+            foreach (PluginPair pair in queryPlugins)
             {
                 PluginPair pair1 = pair;
                 ThreadPool.QueueUserWorkItem(state =>
                 {
                     List<Result> results = pair1.Plugin.Query(query);
-                    foreach (Result result in results)
-                    {
-                        result.PluginDirectory = pair1.Metadata.PluginDirecotry;
-                        result.OriginQuery = query;
-                        result.AutoAjustScore = true;
-                    }
-                    if(results.Count > 0 && updateView) UpdateResultView(results);
+                    results.ForEach(o => { o.AutoAjustScore = true; });
+
+                    App.Window.PushResults(query, pair1.Metadata, results);
                 });
             }
         }

@@ -3,6 +3,7 @@ using System.Drawing.Printing;
 using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Interop;
+using System.Windows.Media;
 
 namespace Wox.Helper
 {
@@ -49,7 +50,7 @@ namespace Wox.Helper
             {
                 WindowInteropHelper helper = new WindowInteropHelper(window);
                 int val = 2;
-                int ret1 = DwmSetWindowAttribute(helper.Handle, 2, ref val, 4);
+                int ret1 = DwmSetWindowAttribute(helper.Handle, 2, ref val, 4);  
 
                 if (ret1 == 0)
                 {
@@ -62,7 +63,7 @@ namespace Wox.Helper
                     return false;
                 }
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 // Probably dwmapi.dll not found (incompatible OS)
                 return false;
