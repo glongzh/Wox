@@ -155,6 +155,11 @@ namespace Wox
             OnUpdateResultView(results);
         }
 
+        public void CopyToClipboard(string text)
+        {
+            System.Windows.Clipboard.SetText(text);
+        }
+
         #endregion
 
         public MainWindow()
@@ -425,7 +430,7 @@ namespace Wox
             Hide();
         }
 
-        private void ShowWox(bool selectAll = true)
+        private void ShowWox(bool selectAll = false)
         {
             if (!double.IsNaN(Left) && !double.IsNaN(Top))
             {
@@ -437,6 +442,8 @@ namespace Wox
                 Top = (screen.WorkingArea.Height - ActualHeight) * coordY + screen.WorkingArea.Top;
             }
 
+            tbQuery.Clear();
+            pnlResult.Clear();
             Show();
             Activate();
             Focus();

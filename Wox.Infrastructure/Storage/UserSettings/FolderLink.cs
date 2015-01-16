@@ -10,6 +10,7 @@ namespace Wox.Infrastructure.Storage.UserSettings
     {
         [JsonProperty]
         public string Path { get; set; }
+        public bool SubPath { get; set; }
 
         public string Nickname
         {

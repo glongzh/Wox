@@ -20,7 +20,14 @@
 							</DataTemplate>
 						</GridViewColumn.CellTemplate>
 					</GridViewColumn>
-				</GridView>
+                    <GridViewColumn Header="Include SubPath"  Width="180">
+                        <GridViewColumn.CellTemplate>
+                            <DataTemplate>
+                                <CheckBox IsChecked="{Binding SubPath}"></CheckBox>
+                            </DataTemplate>
+                        </GridViewColumn.CellTemplate>
+                    </GridViewColumn>
+                </GridView>
 			</ListView.View>
 		</ListView>
 		<StackPanel Grid.Row="1" HorizontalAlignment="Right" Orientation="Horizontal">

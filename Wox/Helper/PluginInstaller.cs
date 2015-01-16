@@ -51,8 +51,7 @@ namespace Wox.Helper
                     .Replace(">", "_")
                     .Replace("?", "_")
                     .Replace("*", "_")
-                    .Replace("|", "_")
-                    + "-" + Guid.NewGuid();
+                    .Replace("|", "_");
                 string newPluginPath = Path.Combine(pluginFolerPath,newPluginName);
                 string content = string.Format(
                         "Do you want to install following plugin?\r\n\r\nName: {0}\r\nVersion: {1}\r\nAuthor: {2}",

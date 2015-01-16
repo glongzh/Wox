@@ -80,30 +80,12 @@ namespace Wox.Plugin.SystemPlugins.Folder
             string input = query.RawQuery.ToLower();
 
             List<FolderLink> userFolderLinks = UserSettingStorage.Instance.FolderLinks.Where(
-                x => x.Nickname.StartsWith(input, StringComparison.OrdinalIgnoreCase)).ToList();
-            List<Result> results =
-                userFolderLinks.Select(
-                    item => new Result(item.Nickname, "Images/folder.png", "Ctrl + Enter to open the directory")
-                    {
-                        Action = c =>
-                        {
-                            if (c.SpecialKeyState.CtrlPressed)
-                            {
-                                try
-                                {
-                                    Process.Start(item.Path);
-                                    return true;
-                                }
-                                catch (Exception ex)
-                                {
-                                    MessageBox.Show(ex.Message, "Could not start " + item.Path);
-                                    return false;
-                                }
-                            }
-                            context.API.ChangeQuery(item.Path);
-                            return false;
-                        }
-                    }).ToList();
+                x => x.Nickname.ToLower().Contains(input)).ToList();
+            List<Result> results = new List<Result>();
+            foreach (var ufl in UserSettingStorage.Instance.FolderLinks)
+            {
+                results.AddRange(BuildResults(input, ufl));
+            }
 
             if (!driverNames.Any(input.StartsWith))
                 return results;
@@ -129,6 +111,70 @@ namespace Wox.Plugin.SystemPlugins.Folder
                     driverNames.Add(driver.Name.ToLower().TrimEnd('\\'));
                 }
             }
+        }
+
+        private List<Result> BuildResults(string key, FolderLink fl)
+        {
+            List<Result> res = new List<Result>();
+            if (fl!=null)
+            {
+                if (fl.Nickname.ToLower().Contains(key))
+                {
+                    res.Add(new Result(fl.Nickname, "Images/folder.png", "Ctrl + Enter to open the directory")
+                    {
+                        Action = c =>
+                        {
+                            if (c.SpecialKeyState.CtrlPressed)
+                            {
+                                try
+                                {
+                                    Process.Start(fl.Path);
+                                    return true;
+                                }
+                                catch (Exception ex)
+                                {
+                                    MessageBox.Show(ex.Message, "Could not start " + fl.Path);
+                                    return false;
+                                }
+                            }
+                            context.API.ChangeQuery(fl.Path);
+                            return false;
+                        }
+                    });
+                }
+                if (fl.SubPath)
+                {
+                    var di = new DirectoryInfo(fl.Path).GetDirectories();
+                    foreach (var d in di)
+                    {
+                        if (d.Name.ToLower().Contains(key))
+                        {
+                            res.Add(new Result(d.Name, "Images/folder.png", "Ctrl + Enter to open the directory")
+                            {
+                                Action = c =>
+                                {
+                                    if (c.SpecialKeyState.CtrlPressed)
+                                    {
+                                        try
+                                        {
+                                            Process.Start(d.FullName);
+                                            return true;
+                                        }
+                                        catch (Exception ex)
+                                        {
+                                            MessageBox.Show(ex.Message, "Could not start " + d.FullName);
+                                            return false;
+                                        }
+                                    }
+                                    context.API.ChangeQuery(d.FullName);
+                                    return false;
+                                }
+                            });
+                        }
+                    }
+                }
+            }
+            return res;
         }
 
         private List<Result> QueryInternal_Directory_Exists(string rawQuery)

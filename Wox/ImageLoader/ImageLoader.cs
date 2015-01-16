@@ -80,7 +80,7 @@ namespace Wox.ImageLoader
 
         public static ImageSource Load(string path,bool addToCache = true)
         {
-            if (string.IsNullOrEmpty(path)) return null;
+            if (string.IsNullOrEmpty(path) || !File.Exists(path)) return null;
             if (addToCache)
             {
                 ImageCacheStroage.Instance.Add(path);
